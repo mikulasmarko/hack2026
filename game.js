@@ -101,6 +101,17 @@ let spawnRateMod = 1.0;
 const bombImage = new Image();
 bombImage.src = 'resources/StanislavKrajci.png';
 
+const fruitImages = {
+    apple: new Image(),
+    orange: new Image(),
+    lemon: new Image(),
+    watermelon: new Image()
+};
+fruitImages.apple.src = 'resources/fruits/01.png';
+fruitImages.orange.src = 'resources/fruits/02.png';
+fruitImages.lemon.src = 'resources/fruits/03.png';
+fruitImages.watermelon.src = 'resources/fruits/04.png';
+
 const fruits = [];
 const particles = [];
 let mouse = { x: 0, y: 0, down: false };
@@ -180,7 +191,7 @@ document.getElementById("backLeaderboardBtn").addEventListener("click", () => {
 
 function updateLeaderboardUI() {
     globalLeaderboard.sort((a, b) => b.score - a.score);
-    const listHtml = globalLeaderboard.slice(0, 10).map((entry, index) => {
+    const listHtml = globalLeaderboard.map((entry, index) => {
         let color = index === 0 ? '#ffd700' : index === 1 ? '#c0c0c0' : index === 2 ? '#cd7f32' : 'white';
         return `<div style="display: flex; justify-content: space-between; color: ${color}; margin-bottom: 5px; border-bottom: 1px solid #555; padding-bottom: 2px;">
                     <span>${index + 1}. ${entry.name}</span>
@@ -453,10 +464,10 @@ class Fruit {
         this.gravity = 0.2 * speedMod;
 
         const types = [
-            { c: 'red', v: 10, name: 'apple' },
-            { c: 'orange', v: 15, name: 'orange' },
-            { c: 'yellow', v: 20, name: 'lemon' },
-            { c: 'green', v: 30, name: 'watermelon' },
+            { c: 'red', v: 10, name: 'apple', img: fruitImages.apple },
+            { c: 'orange', v: 15, name: 'orange', img: fruitImages.orange },
+            { c: 'yellow', v: 20, name: 'lemon', img: fruitImages.lemon },
+            { c: 'green', v: 30, name: 'watermelon', img: fruitImages.watermelon },
         ];
         // Bomb chances based on level
         let bombChance = 0;
@@ -494,6 +505,8 @@ class Fruit {
 
         if (this.type.name === 'bomb' && bombImage.complete && bombImage.naturalWidth !== 0) {
             ctx.drawImage(bombImage, this.x - this.r, this.y - this.r, this.r * 2, this.r * 2);
+        } else if (this.type.img && this.type.img.complete && this.type.img.naturalWidth !== 0) {
+            ctx.drawImage(this.type.img, this.x - this.r, this.y - this.r, this.r * 2, this.r * 2);
         } else {
             ctx.fillStyle = this.type.c;
             ctx.beginPath();
@@ -502,13 +515,6 @@ class Fruit {
             ctx.strokeStyle = "white";
             ctx.lineWidth = 2;
             ctx.stroke();
-
-            if (this.type.name === 'bomb') {
-                ctx.fillStyle = 'red';
-                ctx.beginPath();
-                ctx.arc(this.x, this.y - this.r, 5, 0, Math.PI * 2);
-                ctx.fill();
-            }
         }
     }
 

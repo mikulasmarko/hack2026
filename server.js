@@ -12,6 +12,8 @@ let gameState = {
     players: {},
 };
 
+let globalLeaderboard = [];
+
 let fruitIdCounter = 0;
 let isPlaying = false;
 let spawnTimer = null;
@@ -40,6 +42,9 @@ function spawnFruit() {
 io.on('connection', (socket) => {
     console.log('Player connected:', socket.id);
     
+    // Send current leaderboard to newly connected player
+    socket.emit('updateLeaderboard', globalLeaderboard);
+
     socket.on('joinGame', (name) => {
         gameState.players[socket.id] = { id: socket.id, name: name, score: 0 };
         io.emit('updatePlayers', gameState.players);
@@ -55,6 +60,25 @@ io.on('connection', (socket) => {
         if(gameState.players[socket.id]) {
             io.emit('fruitSliced', { fruitId: data.id, playerId: socket.id, points: data.points, isBomb: data.isBomb });
         }
+    });
+
+    socket.on('submitScore', (data) => {
+        let pName = data.name || 'Player';
+        let pScore = data.score || 0;
+
+        let existingEntry = globalLeaderboard.find(e => e.name === pName);
+        if (existingEntry) {
+            if (pScore > existingEntry.score) {
+                existingEntry.score = pScore;
+            }
+        } else {
+            globalLeaderboard.push({ name: pName, score: pScore });
+        }
+
+        globalLeaderboard.sort((a, b) => b.score - a.score);
+        if (globalLeaderboard.length > 50) globalLeaderboard.length = 50;
+
+        io.emit('updateLeaderboard', globalLeaderboard);
     });
 
     socket.on('mouseMove', (trail) => {
