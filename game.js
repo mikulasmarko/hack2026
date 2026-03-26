@@ -108,12 +108,14 @@ const fruitImages = {
     apple: new Image(),
     orange: new Image(),
     lemon: new Image(),
-    watermelon: new Image()
+    watermelon: new Image(),
+    grape: new Image()
 };
 fruitImages.apple.src = 'resources/fruits/01.png';
 fruitImages.orange.src = 'resources/fruits/02.png';
 fruitImages.lemon.src = 'resources/fruits/03.png';
 fruitImages.watermelon.src = 'resources/fruits/04.png';
+fruitImages.grape.src = 'resources/fruits/05.png';
 
 const fruits = [];
 const particles = [];
@@ -476,6 +478,7 @@ class Fruit {
             { c: 'orange', v: 15, name: 'orange', img: fruitImages.orange },
             { c: 'yellow', v: 20, name: 'lemon', img: fruitImages.lemon },
             { c: 'green', v: 30, name: 'watermelon', img: fruitImages.watermelon },
+            { c: 'purple', v: 25, name: 'grape', img: fruitImages.grape },
         ];
         // Bomb chances based on level
         let bombChance = 0;
