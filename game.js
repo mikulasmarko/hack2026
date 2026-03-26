@@ -101,6 +101,9 @@ let spawnRateMod = 1.0;
 const bombImage = new Image();
 bombImage.src = 'resources/StanislavKrajci.png';
 
+const bgImage = new Image();
+bgImage.src = 'resources/pozadie.png';
+
 const fruitImages = {
     apple: new Image(),
     orange: new Image(),
@@ -599,6 +602,10 @@ function drawTrail() {
 
 function gameLoop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (bgImage.complete && bgImage.naturalWidth !== 0) {
+        ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
+    }
 
     if (screenFlash > 0) {
         ctx.fillStyle = `rgba(255, 255, 255, ${screenFlash})`;
