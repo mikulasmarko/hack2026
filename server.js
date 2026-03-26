@@ -8,6 +8,56 @@ const io = new Server(server);
 
 app.use(express.static(__dirname));
 
+const sqlite3 = require('sqlite3').verbose();
+const dbFile = process.env.DB_PATH || './leaderboard.db'; // Use persistent disk path if configured on Render
+const db = new sqlite3.Database(dbFile, (err) => {
+    if (err) {
+        console.error('Error opening database', err.message);
+    } else {
+        console.log('Connected to the SQLite database.');
+        db.run(`CREATE TABLE IF NOT EXISTS leaderboard
+                (
+                    name
+                    TEXT
+                    PRIMARY
+                    KEY,
+                    score
+                    INTEGER
+                )`, (err) => {
+            if (err) console.error("Could not create table", err);
+            else loadLeaderboard();
+        });
+    }
+});
+
+function loadLeaderboard() {
+    db.all(`SELECT name, score FROM leaderboard ORDER BY score DESC LIMIT 50`, [], (err, rows) => {
+        if (err) {
+            console.error(err);
+        } else {
+            globalLeaderboard = rows;
+            io.emit('updateLeaderboard', globalLeaderboard);
+        }
+    });
+}
+
+function updateDatabaseScore(name, score) {
+    db.get(`SELECT score FROM leaderboard WHERE name = ?`, [name], (err, row) => {
+        if (err) return console.error(err);
+        if (row) {
+            if (score > row.score) {
+                db.run(`UPDATE leaderboard SET score = ? WHERE name = ?`, [score, name], (err) => {
+                    if (!err) loadLeaderboard();
+                });
+            }
+        } else {
+            db.run(`INSERT INTO leaderboard (name, score) VALUES (?, ?)`, [name, score], (err) => {
+                if (!err) loadLeaderboard();
+            });
+        }
+    });
+}
+
 let gameState = {
     players: {},
 };
@@ -66,19 +116,7 @@ io.on('connection', (socket) => {
         let pName = data.name || 'Player';
         let pScore = data.score || 0;
 
-        let existingEntry = globalLeaderboard.find(e => e.name === pName);
-        if (existingEntry) {
-            if (pScore > existingEntry.score) {
-                existingEntry.score = pScore;
-            }
-        } else {
-            globalLeaderboard.push({ name: pName, score: pScore });
-        }
-
-        globalLeaderboard.sort((a, b) => b.score - a.score);
-        if (globalLeaderboard.length > 50) globalLeaderboard.length = 50;
-
-        io.emit('updateLeaderboard', globalLeaderboard);
+        updateDatabaseScore(pName, pScore);
     });
 
     socket.on('mouseMove', (trail) => {

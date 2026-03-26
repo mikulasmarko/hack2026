@@ -367,6 +367,13 @@ function endGame() {
     // Add current run to leaderboard only if it's quick play (not endless)
     if (!endlessMode) {
         let pName = playerNameInput.value.trim() || 'Player1';
+
+        // Emit to server for global sync
+        if (typeof socket !== 'undefined' && socket) {
+            socket.emit('submitScore', { name: pName, score: score });
+        }
+
+        // Keep local fallback just in case
         let existingEntry = globalLeaderboard.find(e => e.name === pName);
         if (existingEntry) {
             if (score > existingEntry.score) {
@@ -376,8 +383,6 @@ function endGame() {
             globalLeaderboard.push({ name: pName, score: score });
         }
         globalLeaderboard.sort((a, b) => b.score - a.score);
-
-        // Keep only top 50 globally to save storage
         if (globalLeaderboard.length > 50) globalLeaderboard.length = 50;
         localStorage.setItem('upjsNinjaGlobalLeaderboard', JSON.stringify(globalLeaderboard));
     }

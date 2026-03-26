@@ -1,4 +1,5 @@
-# UPJS Ninja 🍉🍎🍋🍅
+npm install
+node server.js# UPJS Ninja 🍉🍎🍋🍅
 
 A browser-based multiplayer "Fruit Ninja" clone built with JavaScript, HTML5 Canvas, Node.js, and Socket.io.
 

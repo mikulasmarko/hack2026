@@ -91,7 +91,7 @@
             <input type="text" id="playerNameInput" placeholder="Ninja Name" style="width: 100%; padding: 8px; border-radius: 5px; border: 1px solid #d4a373; background: #333; color: white; text-align: center; font-size: 16px; margin-top: 5px; box-sizing: border-box;">
         </div>
 
-        <button id="playBtn">Quick Play <br><small id="bestQuickScore" style="font-size: 14px; font-weight: normal; color: #ddd;">Best: 0</small></button>
+        <button id="playBtn">Tournament Mode <br><small id="bestQuickScore" style="font-size: 14px; font-weight: normal; color: #ddd;">Best: 0</small></button>
         <button id="endlessBtn">Endless Mode <br><small id="bestEndlessScore" style="font-size: 14px; font-weight: normal; color: #ddd;">Best: 0</small></button>
         <button id="levelsBtn">Difficulty</button>
         <button id="leaderboardBtn">Leaderboard</button>
@@ -134,6 +134,19 @@
 
     <button id="inGameHomeBtn" class="hidden" style="position: absolute; top: 20px; right: 20px; z-index: 5; width: auto;">Main Menu</button>
 
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = typeof io !== 'undefined' ? io() : null;
+
+        if (socket) {
+            socket.on('updateLeaderboard', (data) => {
+                globalLeaderboard = data;
+                if (!document.getElementById("leaderboardMenu").classList.contains("hidden")) {
+                    updateLeaderboardUI();
+                }
+            });
+        }
+    </script>
     <canvas id="gameCanvas"></canvas>
     <script src="game.js"></script>
 </body>
