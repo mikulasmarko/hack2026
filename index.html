@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UPJS NINJA</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #222;
+        }
+        canvas {
+            display: block;
+            margin: 0 auto;
+            background: #d4a373; /* Wooden board style */
+        }
+        #scoreBoard {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            font-family: Arial, sans-serif;
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px #000;
+        }
+        .ui-menu {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.85);
+            padding: 40px;
+            border-radius: 15px;
+            text-align: center;
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            min-width: 300px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            border: 2px solid rgba(212, 163, 115, 0.3);
+        }
+        .ui-menu h1, .ui-menu h2 {
+            margin-top: 0;
+            margin-bottom: 5px;
+            color: #d4a373;
+            text-shadow: 1px 1px 5px rgba(0,0,0,0.8);
+        }
+        .hidden {
+            display: none !important;
+        }
+        button {
+            background: linear-gradient(145deg, #d4a373, #b58055);
+            border: none;
+            padding: 12px 20px;
+            margin: 0;
+            font-size: 20px;
+            cursor: pointer;
+            border-radius: 8px;
+            font-weight: bold;
+            color: #fff;
+            width: 100%;
+            box-sizing: border-box;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+            transition: transform 0.1s ease, background 0.2s ease, box-shadow 0.1s ease;
+        }
+        button:hover {
+            background: linear-gradient(145deg, #e6b88a, #d4a373);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+        }
+        button:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div id="scoreBoard" class="hidden">Score: 0 | ❤️❤️❤️</div>
+
+    <div id="mainMenu" class="ui-menu">
+        <h1>UPJS NINJA</h1>
+
+        <div style="margin-bottom: 15px;">
+            <label for="playerNameInput" style="color: #ddd; font-size: 16px;">Player Name:</label>
+            <input type="text" id="playerNameInput" placeholder="Ninja Name" style="width: 100%; padding: 8px; border-radius: 5px; border: 1px solid #d4a373; background: #333; color: white; text-align: center; font-size: 16px; margin-top: 5px; box-sizing: border-box;">
+        </div>
+
+        <button id="playBtn">Quick Play <br><small id="bestQuickScore" style="font-size: 14px; font-weight: normal; color: #ddd;">Best: 0</small></button>
+        <button id="endlessBtn">Endless Mode <br><small id="bestEndlessScore" style="font-size: 14px; font-weight: normal; color: #ddd;">Best: 0</small></button>
+        <button id="levelsBtn">Difficulty</button>
+        <button id="leaderboardBtn">Leaderboard</button>
+        <button id="settingsBtn">Settings</button>
+    </div>
+
+    <div id="levelsMenu" class="ui-menu hidden">
+        <h2>Select Difficulty</h2>
+        <button class="level-btn" data-level="1">Easy <span id="bestLvl1" style="font-size: 14px; font-weight: normal; color: #ddd;">(Best: 0)</span></button>
+        <button class="level-btn" data-level="2">Medium <span id="bestLvl2" style="font-size: 14px; font-weight: normal; color: #ddd;">(Best: 0)</span></button>
+        <button class="level-btn" data-level="3">Hard <span id="bestLvl3" style="font-size: 14px; font-weight: normal, color: #ddd;">(Best: 0)</span></button>
+        <button class="level-btn" data-level="4">Ninja <span id="bestLvl4" style="font-size: 14px; font-weight: normal; color: #ddd;">(Best: 0)</span></button>
+        <button id="backLevelsBtn" style="margin-top:10px;">Back</button>
+    </div>
+
+    <div id="settingsMenu" class="ui-menu hidden">
+        <h2>Settings</h2>
+        <button id="themeBtn">Toggle Theme</button>
+        <div style="margin: 10px 0; font-size: 18px;">
+            <label>Volume: <input type="range" id="volumeSlider" min="0" max="100" value="50" style="vertical-align: middle;"></label>
+        </div>
+        <button id="backBtn">Back</button>
+    </div>
+
+    <div id="leaderboardMenu" class="ui-menu hidden">
+        <h2>Global Leaderboard</h2>
+        <div id="leaderboardList" style="text-align: left; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 5px; max-height: 200px; overflow-y: auto; font-size: 16px; min-height: 100px;">
+            Loading...
+        </div>
+        <button id="backLeaderboardBtn" style="margin-top:10px;">Back</button>
+    </div>
+
+    <div id="gameOverMenu" class="ui-menu hidden">
+        <h1>GAME OVER</h1>
+        <h2 id="finalScoreText" style="color: white; font-size: 24px;">Final Score: 0</h2>
+        <h3 id="bestScoreText" style="color: #ffd700; margin-top: -10px; margin-bottom: 20px;">New Best Score!</h3>
+        <button id="replayBtn">Replay</button>
+        <button id="homeBtn">Main Menu</button>
+    </div>
+
+    <button id="inGameHomeBtn" class="hidden" style="position: absolute; top: 20px; right: 20px; z-index: 5; width: auto;">Main Menu</button>
+
+    <canvas id="gameCanvas"></canvas>
+    <script src="game.js"></script>
+</body>
+</html>
