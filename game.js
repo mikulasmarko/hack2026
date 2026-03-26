@@ -99,7 +99,7 @@ let speedMod = 1.0;
 let spawnRateMod = 1.0;
 
 const bombImage = new Image();
-bombImage.src = 'resources/StanislavKrajci.png';
+bombImage.src = 'resources/bomb.png';
 
 const bgImage = new Image();
 bgImage.src = 'resources/pozadie.png';
