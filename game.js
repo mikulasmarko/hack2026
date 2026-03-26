@@ -74,6 +74,25 @@ function playBombSound() {
     osc.stop(audioCtx.currentTime + 0.8);
 }
 
+function playLoseSound() {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+
+    osc.connect(gainNode);
+    gainNode.connect(masterGain);
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+    osc.frequency.linearRampToValueAtTime(100, audioCtx.currentTime + 1.0);
+
+    gainNode.gain.setValueAtTime(1, audioCtx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1.0);
+
+    osc.start();
+    osc.stop(audioCtx.currentTime + 1.0);
+}
+
 // Level Config
 let currentLevel = 1;
 let speedMod = 1.0;
@@ -635,6 +654,9 @@ function gameLoop() {
             if (f.y - f.r > canvas.height && f.vy > 0) {
                 if (!f.sliced && f.type.name !== 'bomb' && !endlessMode) {
                     lives--;
+                    if (lives <= 0 && isPlaying) {
+                        playLoseSound();
+                    }
                     updateScoreBoard();
                 }
                 fruits.splice(i, 1);
