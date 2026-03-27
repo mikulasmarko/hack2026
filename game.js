@@ -421,24 +421,26 @@ window.addEventListener("mousemove", (e) => {
 
 // Touch support
 window.addEventListener("touchstart", (e) => {
+    // optional preventDefault here can help stop other behaviors on tap, but we mainly need touchmove and touch-action css
     mouse.down = true;
     mouse.x = e.touches[0].clientX;
     mouse.y = e.touches[0].clientY;
     swipeTrail = [{x: mouse.x, y: mouse.y}];
-});
+}, { passive: false });
 window.addEventListener("touchend", () => {
     mouse.down = false;
     swipeTrail = [];
     applyCombo();
 });
 window.addEventListener("touchmove", (e) => {
+    e.preventDefault(); // Prevent screen scroll
     if (mouse.down) {
         mouse.x = e.touches[0].clientX;
         mouse.y = e.touches[0].clientY;
         swipeTrail.push({x: mouse.x, y: mouse.y});
         if (swipeTrail.length > 10) swipeTrail.shift();
     }
-});
+}, { passive: false });
 
 class Particle {
     constructor(x, y, color) {

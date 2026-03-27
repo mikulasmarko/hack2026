@@ -37,6 +37,27 @@ A browser-based multiplayer "Fruit Ninja" clone built with JavaScript, HTML5 Can
     *   Navigate to `http://localhost:3000`.
     *   The server console will also output your local IP address (e.g., `http://192.168.X.X:3000`), which allows other devices on the same Wi-Fi network to connect and play multiplayer.
 
+## Deployment 🌐
+
+You can easily deploy this game for free using [Render](https://render.com/).
+
+1.  **Create a Render account** and link it to your GitHub/GitLab account.
+2.  **Push this code** to a new repository on your GitHub/GitLab.
+3.  On the Render dashboard, click **"New +" -> "Web Service"**.
+4.  Select your repository from the list.
+5.  Configure the service:
+    *   **Name**: `upjs-ninja` (or any name you prefer)
+    *   **Environment**: `Node`
+    *   **Build Command**: `npm install`
+    *   **Start Command**: `node server.js`
+6.  *Important:* Render uses dynamic ports. Update `server.js` to listen to the `process.env.PORT` environment variable if it doesn't already:
+    ```javascript
+    const PORT = process.env.PORT || 3000;
+    server.listen(PORT, '0.0.0.0', () => { console.log('Server started on port ' + PORT); });
+    ```
+7.  Click **"Create Web Service"**.
+8.  Once the deployment finishes, Render will provide you a live URL (e.g., `https://upjs-ninja.onrender.com`) where your game is hosted globally!
+
 ## Controls 🎮
 
 *   **Mouse (Desktop):** Click and drag the mouse across the screen to slice the fruits.
@@ -55,4 +76,3 @@ If you slice 3 or more fruits within a short time (400ms) without drastically ch
 *   **Backend**: 
     *   `server.js`: Uses Express to serve the static frontend files and Socket.io for managing real-time multiplayer connections, game state synchronization, and the shared global leaderboard.
 *   **Resources**: Contains PNG images for the bomb and fruits (`01.png`, `02.png`, `03.png`, `04.png`).
-
