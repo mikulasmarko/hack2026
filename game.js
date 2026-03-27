@@ -36,6 +36,17 @@ const masterGain = audioCtx.createGain();
 masterGain.gain.value = 0.5; // Default volume
 masterGain.connect(audioCtx.destination);
 
+// Resume audio context on first user interaction
+const resumeAudio = () => {
+    if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
+    window.removeEventListener('click', resumeAudio);
+    window.removeEventListener('touchstart', resumeAudio);
+};
+window.addEventListener('click', resumeAudio);
+window.addEventListener('touchstart', resumeAudio);
+
 function playSliceSound() {
     if (audioCtx.state === 'suspended') audioCtx.resume();
     const osc = audioCtx.createOscillator();
@@ -72,6 +83,25 @@ function playBombSound() {
 
     osc.start();
     osc.stop(audioCtx.currentTime + 0.8);
+}
+
+function playCannonSound() {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+
+    osc.connect(gainNode);
+    gainNode.connect(masterGain);
+
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 0.3);
+
+    gainNode.gain.setValueAtTime(1, audioCtx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.3);
 }
 
 function playLoseSound() {
@@ -217,6 +247,9 @@ document.getElementById("themeBtn").addEventListener("click", () => {
 document.getElementById("volumeSlider").addEventListener("input", (e) => {
     masterGain.gain.value = e.target.value / 100;
 });
+document.getElementById("volumeSlider").addEventListener("mousedown", (e) => e.stopPropagation());
+document.getElementById("volumeSlider").addEventListener("touchstart", (e) => e.stopPropagation(), { passive: false });
+document.getElementById("volumeSlider").addEventListener("touchmove", (e) => e.stopPropagation(), { passive: false });
 document.getElementById("backBtn").addEventListener("click", () => {
     settingsMenu.classList.add("hidden");
     mainMenu.classList.remove("hidden");
@@ -433,7 +466,9 @@ window.addEventListener("touchend", () => {
     applyCombo();
 });
 window.addEventListener("touchmove", (e) => {
-    e.preventDefault(); // Prevent screen scroll
+    if (e.target.tagName !== 'INPUT') {
+        e.preventDefault(); // Prevent screen scroll
+    }
     if (mouse.down) {
         mouse.x = e.touches[0].clientX;
         mouse.y = e.touches[0].clientY;
@@ -492,6 +527,7 @@ class Fruit {
 
         if (bombChance > 0 && Math.random() < bombChance) {
             this.type = { c: '#333', v: -1, name: 'bomb' };
+            playCannonSound();
         } else {
             this.type = types[Math.floor(Math.random() * types.length)];
         }
