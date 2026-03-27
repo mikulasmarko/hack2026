@@ -18,6 +18,12 @@ let lastSliceTime = 0;
 let lastSlicePos = {x: 0, y: 0};
 let sliceDirection = null;
 
+let specialBananaActive = false;
+let specialBananaEndTime = 0;
+let lastBananaSpawnTime = Date.now();
+let pauseFruitsUntil = 0;
+let pauseBombsUntil = 0;
+
 function applyCombo() {
     if (comboCount >= 3) {
         let bonus = comboCount * 10;
@@ -139,13 +145,18 @@ const fruitImages = {
     orange: new Image(),
     lemon: new Image(),
     watermelon: new Image(),
-    grape: new Image()
+    grape: new Image(),
+    banana: new Image()
 };
 fruitImages.apple.src = 'resources/fruits/01.png';
 fruitImages.orange.src = 'resources/fruits/02.png';
 fruitImages.lemon.src = 'resources/fruits/03.png';
 fruitImages.watermelon.src = 'resources/fruits/04.png';
 fruitImages.grape.src = 'resources/fruits/05.png';
+fruitImages.banana.src = 'resources/star.png';
+
+// Fallback logic in case banana image doesn't exist, we just rely on type.c and arc drawing, but let's try to load something
+// Or we just draw an orange arc if it's missing.
 
 const fruits = [];
 const particles = [];
@@ -297,6 +308,10 @@ function startMultiplayer() {
     fruits.length = 0;
     particles.length = 0;
     otherTrails = {};
+    specialBananaActive = false;
+    lastBananaSpawnTime = Date.now();
+    pauseFruitsUntil = 0;
+    pauseBombsUntil = 0;
 
     speedMod = 1.0;
     spawnRateMod = 1.0;
@@ -318,6 +333,10 @@ function startLevel(level) {
     screenFlash = 0;
     fruits.length = 0;
     particles.length = 0;
+    specialBananaActive = false;
+    lastBananaSpawnTime = Date.now();
+    pauseFruitsUntil = 0;
+    pauseBombsUntil = 0;
 
     // Configure difficulty based on level
     if (level === 1) {
@@ -354,6 +373,10 @@ function startEndlessMode() {
     screenFlash = 0;
     fruits.length = 0;
     particles.length = 0;
+    specialBananaActive = false;
+    lastBananaSpawnTime = Date.now();
+    pauseFruitsUntil = 0;
+    pauseBombsUntil = 0;
 
     speedMod = 1.0;
     spawnRateMod = 0.8;
@@ -502,13 +525,24 @@ class Particle {
 }
 
 class Fruit {
-    constructor() {
+    constructor(isSpecialBanana = false, sideSpawn = false) {
         this.r = 30 + Math.random() * 20;
-        this.x = Math.random() * (canvas.width - this.r * 2) + this.r;
-        this.y = canvas.height + this.r;
-        this.vx = ((Math.random() - 0.5) * 6) * speedMod;
-        this.vy = -(12 + Math.random() * 6) * speedMod;
-        this.gravity = 0.2 * speedMod;
+        this.sideSpawn = sideSpawn;
+
+        if (sideSpawn) {
+            let leftSide = Math.random() > 0.5;
+            this.x = leftSide ? -this.r : canvas.width + this.r;
+            this.y = Math.random() * (canvas.height / 2) + canvas.height / 4;
+            this.vx = (leftSide ? (8 + Math.random() * 8) : (-8 - Math.random() * 8)) * speedMod;
+            this.vy = -(6 + Math.random() * 6) * speedMod;
+            this.gravity = 0.2 * speedMod;
+        } else {
+            this.x = Math.random() * (canvas.width - this.r * 2) + this.r;
+            this.y = canvas.height + this.r;
+            this.vx = ((Math.random() - 0.5) * 6) * speedMod;
+            this.vy = -(12 + Math.random() * 6) * speedMod;
+            this.gravity = 0.2 * speedMod;
+        }
 
         const types = [
             { c: 'red', v: 10, name: 'apple', img: fruitImages.apple },
@@ -517,19 +551,28 @@ class Fruit {
             { c: 'green', v: 30, name: 'watermelon', img: fruitImages.watermelon },
             { c: 'purple', v: 25, name: 'grape', img: fruitImages.grape },
         ];
-        // Bomb chances based on level
-        let bombChance = 0;
-        if (currentLevel >= 3) {
-            bombChance = 0.2;
-        } else if (currentLevel === 2) {
-            bombChance = 0.05; // Less frequent on medium
-        }
 
-        if (bombChance > 0 && Math.random() < bombChance) {
-            this.type = { c: '#333', v: -1, name: 'bomb' };
-            playCannonSound();
+        if (isSpecialBanana) {
+            this.type = { c: 'yellow', v: 50, name: 'banana', img: fruitImages.banana };
         } else {
-            this.type = types[Math.floor(Math.random() * types.length)];
+            // Bomb chances based on level
+            let bombChance = 0;
+            if (currentLevel >= 3) {
+                bombChance = 0.2;
+            } else if (currentLevel === 2) {
+                bombChance = 0.05; // Less frequent on medium
+            }
+
+            if (specialBananaActive || Date.now() < pauseBombsUntil) {
+                bombChance = 0; // No bombs while banana is active or inside post-banana grace period
+            }
+
+            if (bombChance > 0 && Math.random() < bombChance) {
+                this.type = { c: '#333', v: -1, name: 'bomb' };
+                playCannonSound();
+            } else {
+                this.type = types[Math.floor(Math.random() * types.length)];
+            }
         }
         this.sliced = false;
     }
@@ -586,6 +629,15 @@ class Fruit {
                 endGame();
 
                 return false;
+            } else if (this.type.name === 'banana') {
+                playSliceSound();
+                score += this.type.v;
+                createParticles(this.x, this.y, this.type.c);
+                updateScoreBoard();
+
+                specialBananaActive = true;
+                specialBananaEndTime = Date.now() + 10000; // 10 seconds
+                return true;
             } else {
                 playSliceSound();
                 score += this.type.v;
@@ -621,14 +673,31 @@ function updateScoreBoard() {
 
 function spawnFruit() {
     if (isPlaying && !gameOver) {
-        if (Math.random() < 0.9) { // 90% chance to spawn 1-3 fruits
-            let count = Math.floor(Math.random() * 3) + 1;
-            // Higher levels can spawn more fruits
-            if (currentLevel >= 3) count += Math.floor(Math.random() * 2);
-            for(let i=0; i<count; i++) fruits.push(new Fruit());
+        let now = Date.now();
+        if (specialBananaActive) {
+            // fast side spawns
+            if (Math.random() < 0.95) {
+                let count = Math.floor(Math.random() * 4) + 2;
+                for(let i=0; i<count; i++) fruits.push(new Fruit(false, true));
+            }
+        } else if (now > pauseFruitsUntil) {
+            // check for special banana spawn
+            if (now - lastBananaSpawnTime > (120000 + Math.random() * 60000)) { // 2 to 3 minutes
+                fruits.push(new Fruit(true));
+                lastBananaSpawnTime = now;
+            }
+
+            if (Math.random() < 0.9) { // 90% chance to spawn 1-3 fruits
+                let count = Math.floor(Math.random() * 3) + 1;
+                // Higher levels can spawn more fruits
+                if (currentLevel >= 3) count += Math.floor(Math.random() * 2);
+                for(let i=0; i<count; i++) fruits.push(new Fruit());
+            }
         }
     }
-    setTimeout(spawnFruit, (800 + Math.random() * 1200) * spawnRateMod);
+
+    let delay = specialBananaActive ? 150 : (800 + Math.random() * 1200) * spawnRateMod;
+    setTimeout(spawnFruit, delay);
 }
 
 function drawTrail() {
@@ -649,8 +718,20 @@ function drawTrail() {
 function gameLoop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    if (specialBananaActive && Date.now() > specialBananaEndTime) {
+        specialBananaActive = false;
+        pauseFruitsUntil = Date.now() + 5000;
+        pauseBombsUntil = Date.now() + 8000 // 5 seconds of nothing + 3 seconds of fruits without bombs
+    }
+
     if (bgImage.complete && bgImage.naturalWidth !== 0) {
         ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
+    }
+
+    if (specialBananaActive) {
+        let pulse = (Math.sin(Date.now() / 150) + 1) / 2; // 0 to 1
+        ctx.fillStyle = `rgba(255, 255, 0, ${pulse * 0.15})`;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
 
     if (screenFlash > 0) {
@@ -711,7 +792,10 @@ function gameLoop() {
             }
 
             if (f.y - f.r > canvas.height && f.vy > 0) {
-                if (!f.sliced && f.type.name !== 'bomb' && !endlessMode) {
+                // Determine if we should deduct a life.
+                // Do not deduct a life if special banana is active or if the fruit ITSELF was spawned during a special banana.
+                // Since special banana fruits may fall down even a short time after the buff ended, we check if they are "sideSpawn".
+                if (!f.sliced && f.type.name !== 'bomb' && !endlessMode && !specialBananaActive && !f.sideSpawn) {
                     lives--;
                     if (lives <= 0 && isPlaying) {
                         playLoseSound();
